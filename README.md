@@ -92,6 +92,7 @@ The stable set currently includes:
 - circled-digit host form
 - double-circled-digit host form
 - broader enclosed-number host variants for octets that fit the Unicode number ranges from the HackTricks domain-parser list
+- loopback-only short IPv4 forms such as `127.1`, `127.0.1`, `127.000000000000000.1`, and `0` where they apply
 
 The fuzz list also includes:
 
@@ -124,3 +125,5 @@ The fuzz list also includes:
 ## Scope
 
 This repository keeps the Python CLI as the source of truth. It focuses on IP and host encodings for fuzzing purposes, not broader URL confusion tricks or generic SSRF payload generation.
+
+Loopback-specific short forms are only added for `127.x.x.x` addresses so they do not pollute non-loopback output.

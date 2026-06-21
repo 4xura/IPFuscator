@@ -146,13 +146,33 @@ def get_domain_parser_variants(parts):
 	return unique_preserve_order(variants)
 
 
+def get_loopback_short_forms(parts):
+	if parts[0] != 127:
+		return []
+
+	variants = []
+
+	# Short-form variants only make sense for loopback addresses.
+	variants.append("127.{}".format(parts[2] * 256 + parts[3]))
+	variants.append("127.0.{}".format(parts[2] * 256 + parts[3]))
+
+	if parts == [127, 0, 0, 1]:
+		variants.extend([
+			"127.1",
+			"127.0.1",
+			"127.000000000000000.1",
+			"0",
+		])
+
+	return unique_preserve_order(variants)
+
+
 def get_known_encodings(parts):
 	decimal = ip_to_decimal(parts)
 	hexparts = get_hex_parts(parts)
 	hexparts_upper = get_hex_parts_upper(parts)
 	octparts = get_oct_parts(parts)
-
-	return [
+	known = [
 		("Original", "{}.{}.{}.{}".format(*parts)),
 		("Decimal", str(decimal)),
 		("Hexadecimal", hex(decimal)),
@@ -193,6 +213,12 @@ def get_known_encodings(parts):
 		("Circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[0]) for part in parts)),
 		("Double circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[1]) for part in parts)),
 	]
+
+	loopback_forms = get_loopback_short_forms(parts)
+	if loopback_forms:
+		known.append(("Loopback short forms", ", ".join(loopback_forms)))
+
+	return known
 
 
 def unique_preserve_order(values):
@@ -311,6 +337,7 @@ def build_fuzz_variants(ip, random_count=10):
 	variants.extend(build_mixed_base_variants(parts))
 	variants.extend(build_padded_variants(parts))
 	variants.extend(get_domain_parser_variants(parts))
+	variants.extend(get_loopback_short_forms(parts))
 
 	randhex, randoct = build_random_padding(hexparts, octparts)
 	variants.append(randhex)
