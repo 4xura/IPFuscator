@@ -6,8 +6,7 @@ import random
 import re
 
 
-__version__ = '0.2.0'
-__repo_url__ = 'https://www.github.com/vysecurity/IPFuscator'
+__version__ = '0.2.1'
 
 
 def get_args():
@@ -15,16 +14,6 @@ def get_args():
 	parser.add_argument('ip', help='The IP to perform IPFuscation on')
 	parser.add_argument('-o', '--output', help='Write fuzzable variants to a file, one per line')
 	return parser.parse_args()
-
-
-def banner():
-	return "\n".join([
-		"IPFuscator",
-		"Author: Vincent Yiu (@vysecurity)",
-		__repo_url__,
-		"Version: {}".format(__version__),
-		"",
-	])
 
 
 def check_ip(ip):
@@ -257,7 +246,7 @@ def main():
 		with open(args.output, 'w', encoding='utf-8', newline='\n') as file_obj:
 			file_obj.write("\n".join(variants) + "\n")
 	else:
-		print(banner() + build_report_output(args.ip), end="")
+		print(build_report_output(args.ip), end="")
 
 
 if __name__ == '__main__':
