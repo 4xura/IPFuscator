@@ -14,8 +14,30 @@ IPFuscation is a technique that allows for IP addresses to be represented in hex
 ## Usage
 
 1) `git clone https://github.com/vysec/ipfuscator`
-2) `python ipfuscator.py 127.0.0.1` or `python3 ipfuscator3.py 127.0.0.1` 
-3) To save the output to a file, use `python ipfuscator.py -o output.txt 127.0.0.1`
+2) `python ipfuscator.py 127.0.0.1`
+3) Save the generated variants to a file with `python ipfuscator.py -o output.txt 127.0.0.1`
+4) You can also use the installed CLI directly: `ipfuscator 127.0.0.1`
+
+### CLI options
+
+- `ipfuscator <ip>` prints the generated variants to stdout
+- `ipfuscator -o output.txt <ip>` writes the same output to a file instead of stdout
+- `ipfuscator -h` shows the built-in help text
+
+### Examples
+
+Print the variants for the AWS metadata address:
+
+```bash
+ipfuscator 169.254.169.254
+```
+
+Write the generated variants to a file for later replay or filtering:
+
+```bash
+ipfuscator -o pl.txt 169.254.169.254
+cat pl.txt
+```
 
 ```
 IPFuscator
@@ -51,4 +73,4 @@ Random base with random padding:
 #5:     127.0000000000000000000000.0x0000000000000000000.000000000000000000000000000001
 ```
 
-4) Take any representation and use it in commands such as `ping`. You can also use it for a command and control endpoint.
+Take any representation and use it in commands such as `ping`, `curl`, or other tools that accept an IP or URL target. This is especially useful when exploring parser differences or testing SSRF filters that key off the literal string form of an IP address.
