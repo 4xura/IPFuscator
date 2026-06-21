@@ -14,6 +14,7 @@ def get_args():
 	parser.add_argument('-o', '--output', help='Output file')
 	return parser.parse_args()
 
+
 def banner():
 	return "\n".join([
 		"IPFuscator",
@@ -23,110 +24,127 @@ def banner():
 		"",
 	])
 
-def checkIP(ip):
-	m = re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z',ip)
-	
-	if m:
-		# Valid IP format
-		parts = ip.split('.')
-		if len(parts) == 4:
-			# Valid IP
-			for i in parts:
-					if int(i) > 255 or int(i) < 0:
-						return False
-			return True
-		else:
-			 return False
-	else:
+
+def check_ip(ip):
+	match = re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z', ip)
+	if not match:
 		return False
 
-def build_output(ip):
 	parts = ip.split('.')
+	if len(parts) != 4:
+		return False
+
+	for part in parts:
+		if int(part) > 255 or int(part) < 0:
+			return False
+
+	return True
+
+
+def parse_parts(ip):
+	return [int(part) for part in ip.split('.')]
+
+
+def ip_to_decimal(parts):
+	return parts[0] * 16777216 + parts[1] * 65536 + parts[2] * 256 + parts[3]
+
+
+def get_known_encodings(parts):
+	decimal = ip_to_decimal(parts)
+	hexparts = [hex(part) for part in parts]
+	octparts = ["0" + oct(part)[2:] for part in parts]
+
+	return [
+		("Decimal", str(decimal)),
+		("Hexadecimal", hex(decimal)),
+		("Octal", "0{}".format(oct(decimal)[2:])),
+		("Full Hex", ".".join(hexparts)),
+		("Full Oct", ".".join(octparts)),
+		("Zero-padded dotted decimal", "{}.{}.{}.{}".format(
+			str(parts[0]).zfill(3),
+			str(parts[1]).zfill(3),
+			str(parts[2]).zfill(3),
+			str(parts[3]).zfill(3),
+		)),
+		("Partial decimal", "{}.{}.{}".format(
+			parts[0],
+			parts[1],
+			parts[2] * 256 + parts[3],
+		)),
+		("Mixed base", "{}.{}.{}.{}".format(
+			hexparts[0],
+			parts[1],
+			octparts[2],
+			parts[3],
+		)),
+	]
+
+
+def build_random_padding(hexparts, octparts):
+	randhex = []
+	for part in hexparts:
+		randhex.append(part.replace('0x', '0x' + '0' * random.randint(1, 30)))
+
+	randoct = []
+	for part in octparts:
+		randoct.append('0' * random.randint(1, 30) + part)
+
+	return ".".join(randhex), ".".join(randoct)
+
+
+def build_random_base(parts, hexparts, octparts):
+	variant = []
+	for index in range(4):
+		val = random.randint(0, 2)
+		if val == 0:
+			variant.append(str(parts[index]))
+		elif val == 1:
+			variant.append(hexparts[index])
+		else:
+			variant.append(octparts[index])
+	return ".".join(variant)
+
+
+def build_random_base_with_padding(parts, hexparts, octparts):
+	variant = []
+	for index in range(4):
+		val = random.randint(0, 2)
+		if val == 0:
+			variant.append(str(parts[index]))
+		elif val == 1:
+			variant.append(hexparts[index].replace('0x', '0x' + '0' * random.randint(1, 30)))
+		else:
+			variant.append('0' * random.randint(1, 30) + octparts[index])
+	return ".".join(variant)
+
+
+def build_output(ip):
+	parts = parse_parts(ip)
+	hexparts = [hex(part) for part in parts]
+	octparts = ["0" + oct(part)[2:] for part in parts]
 	lines = []
 
-	decimal = int(parts[0]) * 16777216 + int(parts[1]) * 65536 + int(parts[2]) * 256 + int(parts[3])
 	lines.append("IP Address:\t{}".format(ip))
 	lines.append("")
-	lines.append("Decimal:\t{}".format(decimal))
-	#hexadecimal = "0x%02X%02X%02X%02X" % (int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3]))
-	lines.append("Hexadecimal:\t{}".format(hex(decimal)))
+	lines.append("Known Encodings:")
+	for label, value in get_known_encodings(parts):
+		lines.append("{}:\t{}".format(label, value))
 
-	#octal = oct(decimal)
-	lines.append("Octal:\t\t0{}".format(oct(decimal)[2:]))
 	lines.append("")
-
-	hexparts = []
-	octparts = []
-
-	for i in parts:
-		hexparts.append(hex(int(i)))
-		octparts.append("0" + oct(int(i))[2:])
-
-	lines.append("Full Hex:\t{}".format('.'.join(hexparts)))
-	lines.append("Full Oct:\t{}".format('.'.join(octparts)))
-	lines.append("")
-	lines.append("Random Padding: ")
-
-	randhex = ""
-
-	for i in hexparts:
-		randhex += i.replace('0x','0x' + '0' * random.randint(1,30)) + '.'
-
-	randhex = randhex[:-1]
+	lines.append("Random Padding:")
+	randhex, randoct = build_random_padding(hexparts, octparts)
 	lines.append("Hex:\t{}".format(randhex))
-
-	randoct = ""
-	for i in octparts:
-		randoct += '0' * random.randint(1,30) + i + '.'
-
-	randoct = randoct[:-1]
-
 	lines.append("Oct:\t{}".format(randoct))
+
 	lines.append("")
 	lines.append("Random base:")
-
-	randbase = []
-
-	count = 0
-	while count < 5:
-		randbaseval = ""
-		for i in range(0,4):
-			val = random.randint(0,2)
-			if val == 0:
-				# dec
-				randbaseval += parts[i] + '.'
-			elif val == 1:
-				# hex
-				randbaseval += hexparts[i] + '.'
-			else:
-				randbaseval += octparts[i] + '.'
-				# oct
-		randbase.append(randbaseval[:-1])
-		lines.append("#{}:\t{}".format(count+1, randbase[count]))
-		count += 1
+	for count in range(5):
+		lines.append("#{}:\t{}".format(count + 1, build_random_base(parts, hexparts, octparts)))
 
 	lines.append("")
 	lines.append("Random base with random padding:")
-
-	randbase = []
-
-	count = 0
-	while count < 5:
-		randbaseval = ""
-		for i in range(0,4):
-			val = random.randint(0,2)
-			if val == 0:
-				# dec
-				randbaseval += parts[i] + '.'
-			elif val == 1:
-				# hex
-				randbaseval += hexparts[i].replace('0x', '0x' + '0' * random.randint(1,30)) + '.'
-			else:
-				randbaseval += '0' * random.randint(1,30) + octparts[i] + '.'
-				# oct
-		randbase.append(randbaseval[:-1])
-		lines.append("#{}:\t{}".format(count+1, randbase[count]))
-		count += 1
+	for count in range(5):
+		lines.append("#{}:\t{}".format(count + 1, build_random_base_with_padding(parts, hexparts, octparts)))
 
 	return "\n".join(lines) + "\n"
 
@@ -135,14 +153,14 @@ def main():
 	args = get_args()
 	output = banner()
 
-	if checkIP(args.ip):
+	if check_ip(args.ip):
 		output += build_output(args.ip)
 	else:
 		output += "[!] Invalid IP format: {}\n".format(args.ip)
 
 	if args.output:
-		with open(args.output, 'w', encoding='utf-8') as f:
-			f.write(output)
+		with open(args.output, 'w', encoding='utf-8') as file_obj:
+			file_obj.write(output)
 	else:
 		print(output, end="")
 

@@ -9,7 +9,7 @@ https://vincentyiu.co.uk/ipfuscation/
 
 ## What is IPFuscator?
 
-IPFuscation is a technique that allows for IP addresses to be represented in hexadecimal or decimal instead of the decimal encoding we are used to. IPFuscator allows us to easily convert to these alternative formats that are interpreted in the same way.
+IPFuscation is a technique that allows an IP address to be represented in alternate but equivalent forms. IPFuscator focuses on host-encoding variants that are useful when testing parsers, filters, and SSRF defenses that key off the literal string form of an IP.
 
 ## Usage
 
@@ -20,9 +20,22 @@ IPFuscation is a technique that allows for IP addresses to be represented in hex
 
 ### CLI options
 
-- `ipfuscator <ip>` prints the generated variants to stdout
+- `ipfuscator <ip>` prints deterministic encodings followed by randomized variants
 - `ipfuscator -o output.txt <ip>` writes the same output to a file instead of stdout
 - `ipfuscator -h` shows the built-in help text
+
+### Deterministic encodings
+
+The tool emits a stable `Known Encodings` section before the randomized variants. This currently includes:
+
+- single integer decimal
+- single integer hexadecimal
+- single integer octal
+- dotted hexadecimal
+- dotted octal
+- zero-padded dotted decimal
+- partial decimal form
+- a mixed-base form
 
 ### Examples
 
@@ -74,3 +87,7 @@ Random base with random padding:
 ```
 
 Take any representation and use it in commands such as `ping`, `curl`, or other tools that accept an IP or URL target. This is especially useful when exploring parser differences or testing SSRF filters that key off the literal string form of an IP address.
+
+## Project scope
+
+This repository keeps the Python CLI as the source of truth. It intentionally focuses on IP/host encodings rather than broader URL confusion or generic SSRF payload generation.
