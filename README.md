@@ -1,6 +1,6 @@
 # IPFuscator
 
-IPFuscator generates alternate but equivalent IP address encodings. It is meant for parser and filter testing, especially when a target keys off the literal string form of an IP address.
+IPFuscator generates alternate but equivalent IP address encodings for fuzzing parsers, URL validators, and SSRF filters that key off the literal string form of an IP address.
 
 Upstream author and original writeup:
 
@@ -9,38 +9,49 @@ Upstream author and original writeup:
 
 ## Install
 
-Clone the repository:
-
 ```bash
 git clone https://github.com/vysecurity/IPFuscator.git
 cd IPFuscator
 ```
 
-Run the Python CLI directly:
+Run it directly:
 
 ```bash
 python ipfuscator.py 127.0.0.1
 ```
 
-If you install it as a command, you can also use:
+Or use the installed command:
 
 ```bash
 ipfuscator 127.0.0.1
 ```
 
-## Usage
+## Default behavior
 
-Print the human-readable report:
+The default mode prints a newline-delimited payload list to stdout. This is the fuzzing-first mode.
 
 ```bash
 ipfuscator 169.254.169.254
 ```
 
-Write a fuzzable newline-delimited variant list:
+Write the list to a file:
 
 ```bash
 ipfuscator 169.254.169.254 -o fuzz.txt
 head fuzz.txt
+```
+
+Generate full URLs instead of bare hosts:
+
+```bash
+ipfuscator 169.254.169.254 --urls --path '/latest/meta-data/' -o fuzz.txt
+head fuzz.txt
+```
+
+Print a human-readable report:
+
+```bash
+ipfuscator 169.254.169.254 --report
 ```
 
 Show help:
@@ -49,26 +60,39 @@ Show help:
 ipfuscator -h
 ```
 
-## Output modes
+## Useful flags
 
-Without `-o`, the tool prints a report with:
+```text
+--report
+    Print a human-readable report instead of the payload list.
 
-- known deterministic encodings
-- mixed-base permutation count
-- random padded variants
-- random mixed-base variants
+--deterministic-only
+    Emit only the stable deterministic variants.
 
-With `-o fuzz.txt`, the tool writes payload candidates only, one per line. That file is meant to feed fuzzing, replay, or filtering workflows.
+--random-count N
+    Control how many random variants are generated per random section.
 
-## Deterministic encodings
+--urls
+    Render payloads as URLs instead of bare host strings.
 
-The `Known Encodings` section includes:
+--scheme http|https
+    Scheme to use with --urls. Default: http
+
+--path /foo
+    Path, query, or fragment suffix to append with --urls.
+```
+
+## Deterministic variants
+
+The stable set currently includes:
 
 - original dotted decimal
 - single integer decimal
 - single integer hexadecimal
+- single integer hexadecimal uppercase
 - single integer octal
 - dotted hexadecimal
+- dotted hexadecimal uppercase
 - dotted octal
 - zero-padded dotted decimal
 - partial decimal 3-part form
@@ -79,7 +103,8 @@ The fuzz list also includes:
 
 - all mixed-base dotted permutations
 - padded variants
-- a small randomized set
+- randomized padded variants
+- randomized mixed-base variants
 
 ## Example fuzz list
 
@@ -87,8 +112,10 @@ The fuzz list also includes:
 169.254.169.254
 2852039166
 0xa9fea9fe
+0xA9FEA9FE
 025177524776
 0xa9.0xfe.0xa9.0xfe
+0xA9.0xFE.0xA9.0xFE
 0251.0376.0251.0376
 169.254.43518
 169.16689662
@@ -97,4 +124,4 @@ The fuzz list also includes:
 
 ## Scope
 
-This repository keeps the Python CLI as the source of truth. It focuses on IP and host encodings, not broader URL confusion tricks or generic SSRF payload generation.
+This repository keeps the Python CLI as the source of truth. It focuses on IP and host encodings for fuzzing purposes, not broader URL confusion tricks or generic SSRF payload generation.

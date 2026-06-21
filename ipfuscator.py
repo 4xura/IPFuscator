@@ -6,13 +6,19 @@ import random
 import re
 
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 
 
 def get_args():
 	parser = ArgumentParser()
 	parser.add_argument('ip', help='The IP to perform IPFuscation on')
-	parser.add_argument('-o', '--output', help='Write fuzzable variants to a file, one per line')
+	parser.add_argument('-o', '--output', help='Write the generated payload list to a file')
+	parser.add_argument('--report', action='store_true', help='Print a human-readable report instead of the payload list')
+	parser.add_argument('--deterministic-only', action='store_true', help='Only emit stable deterministic variants')
+	parser.add_argument('--random-count', type=int, default=10, help='Number of random variants to generate per random section')
+	parser.add_argument('--urls', action='store_true', help='Render payloads as URLs instead of bare hosts')
+	parser.add_argument('--scheme', default='http', help='Scheme to use with --urls (default: http)')
+	parser.add_argument('--path', default='', help='Path or suffix to append with --urls')
 	return parser.parse_args()
 
 
@@ -44,6 +50,10 @@ def get_hex_parts(parts):
 	return [hex(part) for part in parts]
 
 
+def get_hex_parts_upper(parts):
+	return ["0x{:X}".format(part) for part in parts]
+
+
 def get_oct_parts(parts):
 	return ["0" + oct(part)[2:] for part in parts]
 
@@ -51,14 +61,17 @@ def get_oct_parts(parts):
 def get_known_encodings(parts):
 	decimal = ip_to_decimal(parts)
 	hexparts = get_hex_parts(parts)
+	hexparts_upper = get_hex_parts_upper(parts)
 	octparts = get_oct_parts(parts)
 
 	return [
 		("Original", "{}.{}.{}.{}".format(*parts)),
 		("Decimal", str(decimal)),
 		("Hexadecimal", hex(decimal)),
+		("Hexadecimal uppercase", "0x{:X}".format(decimal)),
 		("Octal", "0{}".format(oct(decimal)[2:])),
 		("Full Hex", ".".join(hexparts)),
+		("Full Hex uppercase", ".".join(hexparts_upper)),
 		("Full Oct", ".".join(octparts)),
 		("Zero-padded dotted decimal", "{}.{}.{}.{}".format(
 			str(parts[0]).zfill(3),
@@ -172,7 +185,23 @@ def build_padded_variants(parts):
 	]
 
 
-def build_fuzz_variants(ip):
+def normalize_path(path):
+	if not path:
+		return ''
+	if path.startswith('/') or path.startswith('?') or path.startswith('#'):
+		return path
+	return '/' + path
+
+
+def render_payloads(payloads, args):
+	if not args.urls:
+		return payloads
+
+	suffix = normalize_path(args.path)
+	return ["{}://{}{}".format(args.scheme, payload, suffix) for payload in payloads]
+
+
+def build_fuzz_variants(ip, deterministic_only=False, random_count=10):
 	parts = parse_parts(ip)
 	hexparts = get_hex_parts(parts)
 	octparts = get_oct_parts(parts)
@@ -184,19 +213,20 @@ def build_fuzz_variants(ip):
 	variants.extend(build_mixed_base_variants(parts))
 	variants.extend(build_padded_variants(parts))
 
-	randhex, randoct = build_random_padding(hexparts, octparts)
-	variants.append(randhex)
-	variants.append(randoct)
+	if not deterministic_only:
+		randhex, randoct = build_random_padding(hexparts, octparts)
+		variants.append(randhex)
+		variants.append(randoct)
 
-	for _ in range(10):
-		variants.append(build_random_base(parts, hexparts, octparts))
-	for _ in range(10):
-		variants.append(build_random_base_with_padding(parts, hexparts, octparts))
+		for _ in range(max(random_count, 0)):
+			variants.append(build_random_base(parts, hexparts, octparts))
+		for _ in range(max(random_count, 0)):
+			variants.append(build_random_base_with_padding(parts, hexparts, octparts))
 
 	return unique_preserve_order(variants)
 
 
-def build_report_output(ip):
+def build_report_output(ip, random_count):
 	parts = parse_parts(ip)
 	hexparts = get_hex_parts(parts)
 	octparts = get_oct_parts(parts)
@@ -210,6 +240,7 @@ def build_report_output(ip):
 
 	lines.append("")
 	lines.append("Mixed base permutations:\t{}".format(len(build_mixed_base_variants(parts))))
+	lines.append("Random count per section:\t{}".format(max(random_count, 0)))
 
 	lines.append("")
 	lines.append("Random Padding:")
@@ -219,12 +250,12 @@ def build_report_output(ip):
 
 	lines.append("")
 	lines.append("Random base:")
-	for count in range(5):
+	for count in range(min(max(random_count, 0), 5)):
 		lines.append("#{}:\t{}".format(count + 1, build_random_base(parts, hexparts, octparts)))
 
 	lines.append("")
 	lines.append("Random base with random padding:")
-	for count in range(5):
+	for count in range(min(max(random_count, 0), 5)):
 		lines.append("#{}:\t{}".format(count + 1, build_random_base_with_padding(parts, hexparts, octparts)))
 
 	return "\n".join(lines) + "\n"
@@ -241,12 +272,24 @@ def main():
 		print(error, end="")
 		return
 
+	if args.report:
+		report = build_report_output(args.ip, args.random_count)
+		print(report, end="")
+		return
+
+	payloads = build_fuzz_variants(
+		args.ip,
+		deterministic_only=args.deterministic_only,
+		random_count=args.random_count,
+	)
+	payloads = render_payloads(payloads, args)
+	output = "\n".join(payloads) + "\n"
+
 	if args.output:
-		variants = build_fuzz_variants(args.ip)
 		with open(args.output, 'w', encoding='utf-8', newline='\n') as file_obj:
-			file_obj.write("\n".join(variants) + "\n")
+			file_obj.write(output)
 	else:
-		print(build_report_output(args.ip), end="")
+		print(output, end="")
 
 
 if __name__ == '__main__':
