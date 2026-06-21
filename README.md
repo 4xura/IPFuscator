@@ -20,22 +20,26 @@ IPFuscation is a technique that allows an IP address to be represented in altern
 
 ### CLI options
 
-- `ipfuscator <ip>` prints deterministic encodings followed by randomized variants
-- `ipfuscator -o output.txt <ip>` writes the same output to a file instead of stdout
+- `ipfuscator <ip>` prints a human-readable report
+- `ipfuscator -o output.txt <ip>` writes a fuzzable newline-delimited variant list
 - `ipfuscator -h` shows the built-in help text
 
 ### Deterministic encodings
 
 The tool emits a stable `Known Encodings` section before the randomized variants. This currently includes:
 
+- original dotted decimal
 - single integer decimal
 - single integer hexadecimal
 - single integer octal
 - dotted hexadecimal
 - dotted octal
 - zero-padded dotted decimal
-- partial decimal form
+- partial decimal 3-part form
+- partial decimal 2-part form
 - a mixed-base form
+
+When `-o` is used, the output file contains payload candidates only, one per line. It includes the deterministic encodings above, all mixed-base dotted permutations, padded variants, and a small randomized set.
 
 ### Examples
 
@@ -49,41 +53,21 @@ Write the generated variants to a file for later replay or filtering:
 
 ```bash
 ipfuscator -o pl.txt 169.254.169.254
-cat pl.txt
+head pl.txt
 ```
 
-```
-IPFuscator
-Author: Vincent Yiu (@vysecurity)
-https://www.github.com/vysec/IPFuscator
-Version: 0.1.0
+Example fuzz-list output:
 
-IP Address:     127.0.0.1
-
-Decimal:        2130706433
-Hexadecimal:    0x7f000001
-Octal:          017700000001
-
-Full Hex:       0x7f.0x0.0x0.0x1
-Full Oct:       0177.0.0.01
-
-Random Padding:
-Hex:    0x000000000007f.0x000000000000000000000000000000.0x0000.0x0000000000000000000000001
-Oct:    00000000000000000000000177.000000000000000000.00000000000000000000000000000.000001
-
-Random base:
-#1:     0x7f.0x0.0.01
-#2:     0x7f.0x0.0x0.1
-#3:     0177.0x0.0x0.0x1
-#4:     0x7f.0.0.01
-#5:     127.0x0.0.0x1
-
-Random base with random padding:
-#1:     127.0x00000000.000000.000000000000000001
-#2:     127.0x0000000000000.0x00000000000000000000000000000.0001
-#3:     0000000000000000177.0x0000000000000000000000.0x00000000000000000000000000.1
-#4:     0000000000000000000177.0.000000.1
-#5:     127.0000000000000000000000.0x0000000000000000000.000000000000000000000000000001
+```text
+169.254.169.254
+2852039166
+0xa9fea9fe
+025177524776
+0xa9.0xfe.0xa9.0xfe
+0251.0376.0251.0376
+169.254.43518
+169.16689662
+0xa9.254.0251.254
 ```
 
 Take any representation and use it in commands such as `ping`, `curl`, or other tools that accept an IP or URL target. This is especially useful when exploring parser differences or testing SSRF filters that key off the literal string form of an IP address.
