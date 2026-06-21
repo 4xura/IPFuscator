@@ -28,13 +28,13 @@ ipfuscator 127.0.0.1
 
 ## Default behavior
 
-The default mode prints a newline-delimited payload list to stdout. This is the fuzzing-first mode.
+The default mode prints a human-readable report with deterministic encodings and sample randomized variants.
 
 ```bash
 ipfuscator 169.254.169.254
 ```
 
-Write the list to a file:
+Write a fuzzable newline-delimited payload list to a file:
 
 ```bash
 ipfuscator 169.254.169.254 -o fuzz.txt
@@ -48,12 +48,6 @@ ipfuscator 169.254.169.254 --urls --path '/latest/meta-data/' -o fuzz.txt
 head fuzz.txt
 ```
 
-Print a human-readable report:
-
-```bash
-ipfuscator 169.254.169.254 --report
-```
-
 Show help:
 
 ```bash
@@ -63,12 +57,6 @@ ipfuscator -h
 ## Useful flags
 
 ```text
---report
-    Print a human-readable report instead of the payload list.
-
---deterministic-only
-    Emit only the stable deterministic variants.
-
 --random-count N
     Control how many random variants are generated per random section.
 

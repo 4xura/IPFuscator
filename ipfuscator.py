@@ -13,8 +13,6 @@ def get_args():
 	parser = ArgumentParser()
 	parser.add_argument('ip', help='The IP to perform IPFuscation on')
 	parser.add_argument('-o', '--output', help='Write the generated payload list to a file')
-	parser.add_argument('--report', action='store_true', help='Print a human-readable report instead of the payload list')
-	parser.add_argument('--deterministic-only', action='store_true', help='Only emit stable deterministic variants')
 	parser.add_argument('--random-count', type=int, default=10, help='Number of random variants to generate per random section')
 	parser.add_argument('--urls', action='store_true', help='Render payloads as URLs instead of bare hosts')
 	parser.add_argument('--scheme', default='http', help='Scheme to use with --urls (default: http)')
@@ -201,7 +199,7 @@ def render_payloads(payloads, args):
 	return ["{}://{}{}".format(args.scheme, payload, suffix) for payload in payloads]
 
 
-def build_fuzz_variants(ip, deterministic_only=False, random_count=10):
+def build_fuzz_variants(ip, random_count=10):
 	parts = parse_parts(ip)
 	hexparts = get_hex_parts(parts)
 	octparts = get_oct_parts(parts)
@@ -213,15 +211,14 @@ def build_fuzz_variants(ip, deterministic_only=False, random_count=10):
 	variants.extend(build_mixed_base_variants(parts))
 	variants.extend(build_padded_variants(parts))
 
-	if not deterministic_only:
-		randhex, randoct = build_random_padding(hexparts, octparts)
-		variants.append(randhex)
-		variants.append(randoct)
+	randhex, randoct = build_random_padding(hexparts, octparts)
+	variants.append(randhex)
+	variants.append(randoct)
 
-		for _ in range(max(random_count, 0)):
-			variants.append(build_random_base(parts, hexparts, octparts))
-		for _ in range(max(random_count, 0)):
-			variants.append(build_random_base_with_padding(parts, hexparts, octparts))
+	for _ in range(max(random_count, 0)):
+		variants.append(build_random_base(parts, hexparts, octparts))
+	for _ in range(max(random_count, 0)):
+		variants.append(build_random_base_with_padding(parts, hexparts, octparts))
 
 	return unique_preserve_order(variants)
 
@@ -272,24 +269,15 @@ def main():
 		print(error, end="")
 		return
 
-	if args.report:
-		report = build_report_output(args.ip, args.random_count)
-		print(report, end="")
-		return
-
-	payloads = build_fuzz_variants(
-		args.ip,
-		deterministic_only=args.deterministic_only,
-		random_count=args.random_count,
-	)
-	payloads = render_payloads(payloads, args)
-	output = "\n".join(payloads) + "\n"
-
 	if args.output:
+		payloads = build_fuzz_variants(args.ip, random_count=args.random_count)
+		payloads = render_payloads(payloads, args)
+		output = "\n".join(payloads) + "\n"
 		with open(args.output, 'w', encoding='utf-8', newline='\n') as file_obj:
 			file_obj.write(output)
 	else:
-		print(output, end="")
+		report = build_report_output(args.ip, args.random_count)
+		print(report, end="")
 
 
 if __name__ == '__main__':
