@@ -9,6 +9,64 @@ import re
 __version__ = '0.4.0'
 
 
+UNICODE_DIGIT_STYLES = [
+	{
+		'name': 'Circled digits',
+		'map': {
+			'0': '⓪', '1': '①', '2': '②', '3': '③', '4': '④',
+			'5': '⑤', '6': '⑥', '7': '⑦', '8': '⑧', '9': '⑨',
+		},
+	},
+	{
+		'name': 'Double circled digits',
+		'map': {
+			'0': '⓿', '1': '⓵', '2': '⓶', '3': '⓷', '4': '⓸',
+			'5': '⓹', '6': '⓺', '7': '⓻', '8': '⓼', '9': '⓽',
+		},
+	},
+]
+
+
+WHOLE_NUMBER_STYLES = [
+	{
+		'name': 'Circled number',
+		'map': {
+			0: '⓪', 1: '①', 2: '②', 3: '③', 4: '④', 5: '⑤',
+			6: '⑥', 7: '⑦', 8: '⑧', 9: '⑨', 10: '⑩', 11: '⑪',
+			12: '⑫', 13: '⑬', 14: '⑭', 15: '⑮', 16: '⑯', 17: '⑰',
+			18: '⑱', 19: '⑲', 20: '⑳',
+		},
+	},
+	{
+		'name': 'Parenthesized number',
+		'map': {
+			1: '⑴', 2: '⑵', 3: '⑶', 4: '⑷', 5: '⑸', 6: '⑹',
+			7: '⑺', 8: '⑻', 9: '⑼', 10: '⑽', 11: '⑾', 12: '⑿',
+			13: '⒀', 14: '⒁', 15: '⒂', 16: '⒃', 17: '⒄', 18: '⒅',
+			19: '⒆', 20: '⒇',
+		},
+	},
+	{
+		'name': 'Number with full stop',
+		'map': {
+			1: '⒈', 2: '⒉', 3: '⒊', 4: '⒋', 5: '⒌', 6: '⒍',
+			7: '⒎', 8: '⒏', 9: '⒐', 10: '⒑', 11: '⒒', 12: '⒓',
+			13: '⒔', 14: '⒕', 15: '⒖', 16: '⒗', 17: '⒘', 18: '⒙',
+			19: '⒚', 20: '⒛',
+		},
+	},
+	{
+		'name': 'Double circled number',
+		'map': {
+			0: '⓿', 1: '⓵', 2: '⓶', 3: '⓷', 4: '⓸', 5: '⓹',
+			6: '⓺', 7: '⓻', 8: '⓼', 9: '⓽', 10: '⓾', 11: '⓫',
+			12: '⓬', 13: '⓭', 14: '⓮', 15: '⓯', 16: '⓰', 17: '⓱',
+			18: '⓲', 19: '⓳', 20: '⓴',
+		},
+	},
+]
+
+
 def get_args():
 	parser = ArgumentParser()
 	parser.add_argument('-i', '--ip', required=True, help='The IP to perform IPFuscation on')
@@ -56,31 +114,36 @@ def get_oct_parts(parts):
 	return ["0" + oct(part)[2:] for part in parts]
 
 
-def to_circled_digits(value):
-	mapping = {
-		'0': '⓪',
-		'1': '①',
-		'2': '②',
-		'3': '③',
-		'4': '④',
-		'5': '⑤',
-		'6': '⑥',
-		'7': '⑦',
-		'8': '⑧',
-		'9': '⑨',
-	}
-	return ''.join(mapping[ch] for ch in str(value))
+def encode_digits(value, style):
+	return ''.join(style['map'][ch] for ch in str(value))
 
 
-def get_dot_bypass_variants(parts):
+def get_unicode_octet_variants(value):
+	variants = [str(value)]
+
+	for style in UNICODE_DIGIT_STYLES:
+		variants.append(encode_digits(value, style))
+
+	for style in WHOLE_NUMBER_STYLES:
+		if value in style['map']:
+			variants.append(style['map'][value])
+
+	return unique_preserve_order(variants)
+
+
+def get_domain_parser_variants(parts):
 	decimal_parts = [str(part) for part in parts]
-	circled_parts = [to_circled_digits(part) for part in parts]
-	return [
+	variants = [
 		"。".join(decimal_parts),
 		"%E3%80%82".join(decimal_parts),
-		"。".join(circled_parts),
-		"%E3%80%82".join(circled_parts),
 	]
+
+	unicode_octets = [get_unicode_octet_variants(part) for part in parts]
+	for separator in ("。", "%E3%80%82"):
+		for choice in product(*unicode_octets):
+			variants.append(separator.join(choice))
+
+	return unique_preserve_order(variants)
 
 
 def get_known_encodings(parts):
@@ -119,10 +182,16 @@ def get_known_encodings(parts):
 			octparts[2],
 			parts[3],
 		)),
-		("Dot bypass (ideographic full stop)", get_dot_bypass_variants(parts)[0]),
-		("Dot bypass (percent-encoded ideographic full stop)", get_dot_bypass_variants(parts)[1]),
-		("Circled digits", get_dot_bypass_variants(parts)[2]),
-		("Circled digits + encoded dots", get_dot_bypass_variants(parts)[3]),
+		("Mixed base (HackTricks)", "{}.{}.{}.{}".format(
+			hexparts_upper[0],
+			parts[1],
+			octparts[2],
+			octparts[3],
+		)),
+		("Dot bypass (ideographic full stop)", get_domain_parser_variants(parts)[0]),
+		("Dot bypass (percent-encoded ideographic full stop)", get_domain_parser_variants(parts)[1]),
+		("Circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[0]) for part in parts)),
+		("Double circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[1]) for part in parts)),
 	]
 
 
@@ -241,6 +310,7 @@ def build_fuzz_variants(ip, random_count=10):
 
 	variants.extend(build_mixed_base_variants(parts))
 	variants.extend(build_padded_variants(parts))
+	variants.extend(get_domain_parser_variants(parts))
 
 	randhex, randoct = build_random_padding(hexparts, octparts)
 	variants.append(randhex)

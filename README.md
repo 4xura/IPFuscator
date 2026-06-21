@@ -83,13 +83,15 @@ The stable set currently includes:
 - dotted hexadecimal uppercase
 - dotted octal
 - zero-padded dotted decimal
-- partial decimal 3-part form
+- partial decimal 3-part form (`169.254.43518`, the HackTricks “Class B” style)
 - partial decimal 2-part form
 - a mixed-base form
+- the exact HackTricks mixed sample form (`0xA9.254.0251.0376`)
 - ideographic-dot host form
 - percent-encoded ideographic-dot host form
 - circled-digit host form
-- circled-digit host form with encoded dots
+- double-circled-digit host form
+- broader enclosed-number host variants for octets that fit the Unicode number ranges from the HackTricks domain-parser list
 
 The fuzz list also includes:
 
@@ -112,9 +114,11 @@ The fuzz list also includes:
 169.254.43518
 169.16689662
 0xa9.254.0251.254
+0xA9.254.0251.0376
 169。254。169。254
 169%E3%80%82254%E3%80%82169%E3%80%82254
 ①⑥⑨。②⑤④。①⑥⑨。②⑤④
+⓵⑥⑨。②⑤④。⓵⑥⑨。②⑤④
 ```
 
 ## Scope
