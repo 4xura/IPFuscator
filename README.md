@@ -89,8 +89,8 @@ The stable set currently includes:
 - the exact HackTricks mixed sample form (`0xA9.254.0251.0376`)
 - ideographic-dot host form
 - percent-encoded ideographic-dot host form
-- circled-digit host form
-- double-circled-digit host form
+- circled-digit host form with normal dots
+- double-circled-digit host form with normal dots
 - broader enclosed-number host variants for octets that fit the Unicode number ranges from the HackTricks domain-parser list
 - loopback-only short IPv4 forms such as `127.1`, `127.0.1`, `127.000000000000000.1`, and `0` where they apply
 
