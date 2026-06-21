@@ -6,12 +6,12 @@ import random
 import re
 
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 
 def get_args():
 	parser = ArgumentParser()
-	parser.add_argument('ip', help='The IP to perform IPFuscation on')
+	parser.add_argument('-i', '--ip', required=True, help='The IP to perform IPFuscation on')
 	parser.add_argument('-o', '--output', help='Write the generated payload list to a file')
 	parser.add_argument('--random-count', type=int, default=10, help='Number of random variants to generate per random section')
 	parser.add_argument('--urls', action='store_true', help='Render payloads as URLs instead of bare hosts')
@@ -56,6 +56,33 @@ def get_oct_parts(parts):
 	return ["0" + oct(part)[2:] for part in parts]
 
 
+def to_circled_digits(value):
+	mapping = {
+		'0': '⓪',
+		'1': '①',
+		'2': '②',
+		'3': '③',
+		'4': '④',
+		'5': '⑤',
+		'6': '⑥',
+		'7': '⑦',
+		'8': '⑧',
+		'9': '⑨',
+	}
+	return ''.join(mapping[ch] for ch in str(value))
+
+
+def get_dot_bypass_variants(parts):
+	decimal_parts = [str(part) for part in parts]
+	circled_parts = [to_circled_digits(part) for part in parts]
+	return [
+		"。".join(decimal_parts),
+		"%E3%80%82".join(decimal_parts),
+		"。".join(circled_parts),
+		"%E3%80%82".join(circled_parts),
+	]
+
+
 def get_known_encodings(parts):
 	decimal = ip_to_decimal(parts)
 	hexparts = get_hex_parts(parts)
@@ -92,6 +119,10 @@ def get_known_encodings(parts):
 			octparts[2],
 			parts[3],
 		)),
+		("Dot bypass (ideographic full stop)", get_dot_bypass_variants(parts)[0]),
+		("Dot bypass (percent-encoded ideographic full stop)", get_dot_bypass_variants(parts)[1]),
+		("Circled digits", get_dot_bypass_variants(parts)[2]),
+		("Circled digits + encoded dots", get_dot_bypass_variants(parts)[3]),
 	]
 
 

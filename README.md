@@ -17,13 +17,13 @@ cd IPFuscator
 Run it directly:
 
 ```bash
-python ipfuscator.py 127.0.0.1
+python ipfuscator.py -i 127.0.0.1
 ```
 
 Or use the installed command:
 
 ```bash
-ipfuscator 127.0.0.1
+ipfuscator -i 127.0.0.1
 ```
 
 ## Default behavior
@@ -31,20 +31,20 @@ ipfuscator 127.0.0.1
 The default mode prints a human-readable report with deterministic encodings and sample randomized variants.
 
 ```bash
-ipfuscator 169.254.169.254
+ipfuscator -i 169.254.169.254
 ```
 
 Write a fuzzable newline-delimited payload list to a file:
 
 ```bash
-ipfuscator 169.254.169.254 -o fuzz.txt
+ipfuscator -i 169.254.169.254 -o fuzz.txt
 head fuzz.txt
 ```
 
 Generate full URLs instead of bare hosts:
 
 ```bash
-ipfuscator 169.254.169.254 --urls --path '/latest/meta-data/' -o fuzz.txt
+ipfuscator -i 169.254.169.254 --urls --path '/latest/meta-data/' -o fuzz.txt
 head fuzz.txt
 ```
 
@@ -86,6 +86,10 @@ The stable set currently includes:
 - partial decimal 3-part form
 - partial decimal 2-part form
 - a mixed-base form
+- ideographic-dot host form
+- percent-encoded ideographic-dot host form
+- circled-digit host form
+- circled-digit host form with encoded dots
 
 The fuzz list also includes:
 
@@ -108,6 +112,9 @@ The fuzz list also includes:
 169.254.43518
 169.16689662
 0xa9.254.0251.254
+169。254。169。254
+169%E3%80%82254%E3%80%82169%E3%80%82254
+①⑥⑨。②⑤④。①⑥⑨。②⑤④
 ```
 
 ## Scope
