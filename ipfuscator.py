@@ -134,12 +134,14 @@ def get_unicode_octet_variants(value):
 def get_domain_parser_variants(parts):
 	decimal_parts = [str(part) for part in parts]
 	variants = [
+		".".join(decimal_parts),
 		"。".join(decimal_parts),
+		"%2e".join(decimal_parts),
 		"%E3%80%82".join(decimal_parts),
 	]
 
 	unicode_octets = [get_unicode_octet_variants(part) for part in parts]
-	for separator in ("。", "%E3%80%82"):
+	for separator in (".", "。", "%2e", "%E3%80%82"):
 		for choice in product(*unicode_octets):
 			variants.append(separator.join(choice))
 
@@ -208,10 +210,10 @@ def get_known_encodings(parts):
 			octparts[2],
 			octparts[3],
 		)),
-		("Dot bypass (ideographic full stop)", get_domain_parser_variants(parts)[0]),
-		("Dot bypass (percent-encoded ideographic full stop)", get_domain_parser_variants(parts)[1]),
-		("Circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[0]) for part in parts)),
-		("Double circled digits", "。".join(encode_digits(part, UNICODE_DIGIT_STYLES[1]) for part in parts)),
+		("Dot bypass (ideographic full stop)", get_domain_parser_variants(parts)[1]),
+		("Dot bypass (percent-encoded ideographic full stop)", get_domain_parser_variants(parts)[3]),
+		("Circled digits", ".".join(encode_digits(part, UNICODE_DIGIT_STYLES[0]) for part in parts)),
+		("Double circled digits", ".".join(encode_digits(part, UNICODE_DIGIT_STYLES[1]) for part in parts)),
 	]
 
 	loopback_forms = get_loopback_short_forms(parts)
