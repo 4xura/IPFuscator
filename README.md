@@ -15,6 +15,7 @@ IPFuscation is a technique that allows for IP addresses to be represented in hex
 
 1) `git clone https://github.com/vysec/ipfuscator`
 2) `python ipfuscator.py 127.0.0.1` or `python3 ipfuscator3.py 127.0.0.1` 
+3) To save the output to a file, use `python ipfuscator.py -o output.txt 127.0.0.1`
 
 ```
 IPFuscator
@@ -50,4 +51,4 @@ Random base with random padding:
 #5:     127.0000000000000000000000.0x0000000000000000000.000000000000000000000000000001
 ```
 
-3) Take any representation and use it in commands such as `ping`. You can also use it for a command and control endpoint.
+4) Take any representation and use it in commands such as `ping`. You can also use it for a command and control endpoint.

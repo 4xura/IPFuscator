@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
-import struct
-import re, random
+import random
+import re
 
 
 __version__ = '0.1.0'
@@ -15,14 +15,16 @@ def get_args():
 	return parser.parse_args()
 
 def banner():
-	print("IPFuscator")
-	print("Author: Vincent Yiu (@vysecurity)")
-	print("https://www.github.com/vysec/IPFuscator")
-	print("Version: {}".format(__version__))
-	print("")
+	return "\n".join([
+		"IPFuscator",
+		"Author: Vincent Yiu (@vysecurity)",
+		"https://www.github.com/vysec/IPFuscator",
+		"Version: {}".format(__version__),
+		"",
+	])
 
 def checkIP(ip):
-	m = re.match('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z',ip)
+	m = re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z',ip)
 	
 	if m:
 		# Valid IP format
@@ -38,20 +40,20 @@ def checkIP(ip):
 	else:
 		return False
 
-def printOutput(ip):
+def build_output(ip):
 	parts = ip.split('.')
+	lines = []
 
 	decimal = int(parts[0]) * 16777216 + int(parts[1]) * 65536 + int(parts[2]) * 256 + int(parts[3])
-	print("")
-
-	print("Decimal:\t{}".format(decimal))
+	lines.append("IP Address:\t{}".format(ip))
+	lines.append("")
+	lines.append("Decimal:\t{}".format(decimal))
 	#hexadecimal = "0x%02X%02X%02X%02X" % (int(parts[0]), int(parts[1]), int(parts[2]), int(parts[3]))
-	print("Hexadecimal:\t{}".format(hex(decimal)))
+	lines.append("Hexadecimal:\t{}".format(hex(decimal)))
 
 	#octal = oct(decimal)
-	print("Octal:\t\t0{}".format(oct(decimal)[2:]))
-
-	print("")
+	lines.append("Octal:\t\t0{}".format(oct(decimal)[2:]))
+	lines.append("")
 
 	hexparts = []
 	octparts = []
@@ -60,11 +62,10 @@ def printOutput(ip):
 		hexparts.append(hex(int(i)))
 		octparts.append("0" + oct(int(i))[2:])
 
-	print("Full Hex:\t{}".format('.'.join(hexparts)))
-	print("Full Oct:\t{}".format('.'.join(octparts)))
-
-	print("")
-	print("Random Padding: ")
+	lines.append("Full Hex:\t{}".format('.'.join(hexparts)))
+	lines.append("Full Oct:\t{}".format('.'.join(octparts)))
+	lines.append("")
+	lines.append("Random Padding: ")
 
 	randhex = ""
 
@@ -72,7 +73,7 @@ def printOutput(ip):
 		randhex += i.replace('0x','0x' + '0' * random.randint(1,30)) + '.'
 
 	randhex = randhex[:-1]
-	print("Hex:\t{}".format(randhex))
+	lines.append("Hex:\t{}".format(randhex))
 
 	randoct = ""
 	for i in octparts:
@@ -80,10 +81,9 @@ def printOutput(ip):
 
 	randoct = randoct[:-1]
 
-	print("Oct:\t{}".format(randoct))
-
-	print("")
-	print("Random base:")
+	lines.append("Oct:\t{}".format(randoct))
+	lines.append("")
+	lines.append("Random base:")
 
 	randbase = []
 
@@ -102,11 +102,11 @@ def printOutput(ip):
 				randbaseval += octparts[i] + '.'
 				# oct
 		randbase.append(randbaseval[:-1])
-		print("#{}:\t{}".format(count+1, randbase[count]))
+		lines.append("#{}:\t{}".format(count+1, randbase[count]))
 		count += 1
 
-	print("")
-	print("Random base with random padding:")
+	lines.append("")
+	lines.append("Random base with random padding:")
 
 	randbase = []
 
@@ -125,20 +125,26 @@ def printOutput(ip):
 				randbaseval += '0' * random.randint(1,30) + octparts[i] + '.'
 				# oct
 		randbase.append(randbaseval[:-1])
-		print("#{}:\t{}".format(count+1, randbase[count]))
+		lines.append("#{}:\t{}".format(count+1, randbase[count]))
 		count += 1
+
+	return "\n".join(lines) + "\n"
 
 
 def main():
-	banner()
-
 	args = get_args()
+	output = banner()
 
 	if checkIP(args.ip):
-		print("IP Address:\t{}".format(args.ip))
-		printOutput(args.ip)
+		output += build_output(args.ip)
 	else:
-		print("[!] Invalid IP format: {}".format(args.ip))
+		output += "[!] Invalid IP format: {}\n".format(args.ip)
+
+	if args.output:
+		with open(args.output, 'w', encoding='utf-8') as f:
+			f.write(output)
+	else:
+		print(output, end="")
 
 
 if __name__ == '__main__':
